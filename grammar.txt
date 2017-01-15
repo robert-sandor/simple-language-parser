@@ -1,9 +1,11 @@
-a b c d
-S B C
+a + * ( )
+S A B C D
 S
-S -> B b
-S -> C d
-B -> a B
-B -> eps
-C -> c C
+S -> B A
+A -> + B A
+A -> eps
+B -> D C
+C -> * D C
 C -> eps
+D -> ( S )
+D -> a
