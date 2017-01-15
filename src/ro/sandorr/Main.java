@@ -29,6 +29,7 @@ public class Main {
 
             List<String> productionString = LLOneParser.parse(grammar, parsingTable, processedInput);
 
+            System.out.println(grammar);
             System.out.println(first);
             System.out.println(follow);
             System.out.println(parsingTable);

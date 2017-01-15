@@ -28,10 +28,19 @@ public class GrammarBuilder {
                         } else {
                             final String[] parts = line.split("->");
                             if (parts.length == 2) {
-                                productions.add(new Production(
-                                        Arrays.asList(parts[0].trim().split(" ")),
-                                        Arrays.asList(parts[1].trim().split(" "))
-                                ));
+                                List<String> lhs = Arrays.asList(parts[0].trim().split(" "));
+                                if (lhs.size() > 1 || !nonTerminals.contains(lhs.get(0))) {
+                                    throw new RuntimeException("Invalid production " + line);
+                                }
+
+                                List<String> rhs = Arrays.asList(parts[1].trim().split(" "));
+                                rhs.forEach(token -> {
+                                    if (!terminals.contains(token) && !nonTerminals.contains(token) && !Grammar.EPSILON.equals(token)) {
+                                        throw new RuntimeException("Token not in grammar " + token + " in production " + line);
+                                    }
+                                });
+
+                                productions.add(new Production(lhs, rhs));
                             }
                         }
                     });

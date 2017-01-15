@@ -175,14 +175,14 @@ public class LLOneParser {
                     }
                     productionString.add(grammar.getProductions().get(parsingTable.getTable().get(workTop).get(inputTop).getIndex()).toString());
                 } else {
-                    throw new RuntimeException();
+                    throw new RuntimeException("No entry for nonterminal " + workTop + " and prediction " + inputTop);
                 }
             } else if (grammar.getTerminals().contains(workTop)) {
                 if (workTop.equals(inputTop)) {
                     work.pop();
                     input.pop();
                 } else {
-                    throw new RuntimeException();
+                    throw new RuntimeException("Different stack tops " + workTop + " and " + inputTop);
                 }
             } else {
                 throw new RuntimeException();
