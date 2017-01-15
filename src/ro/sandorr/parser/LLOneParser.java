@@ -65,9 +65,6 @@ public class LLOneParser {
                     }));
         }
 
-//        grammar.getTerminals().forEach(map::remove);
-//        map.remove(Grammar.EPSILON);
-
         return map;
     }
 
@@ -108,7 +105,94 @@ public class LLOneParser {
         return followResult;
     }
 
-    public static Set<String> firstSequence(final Map<String, Set<String>> first, final List<String> sequence) {
+    public static LL1ParsingTable constructTable(final Grammar grammar,
+                                                 final Map<String, Set<String>> firstResult,
+                                                 final Map<String, Set<String>> followResult) {
+        LL1ParsingTable ll1ParsingTable = new LL1ParsingTable();
+
+        final Map<String, LL1ParsingTableCell> dollarRow = new HashMap<>();
+        dollarRow.put(DOLLAR, LL1ParsingTableCell.ACCEPT);
+        ll1ParsingTable.getTable().put(DOLLAR, dollarRow);
+
+        grammar.getTerminals().forEach(rowTerminal -> {
+            Map<String, LL1ParsingTableCell> row = new HashMap<>();
+            grammar.getTerminals().forEach(columnTerminal -> {
+                if (Objects.equals(rowTerminal, columnTerminal)) {
+                    row.put(columnTerminal, LL1ParsingTableCell.POP);
+                }
+            });
+            ll1ParsingTable.getTable().put(rowTerminal, row);
+        });
+
+        grammar.getProductions().forEach(production -> {
+            if (!ll1ParsingTable.getTable().containsKey(production.getLeftHand().get(0))) {
+                ll1ParsingTable.getTable().put(production.getLeftHand().get(0), new HashMap<>());
+            }
+
+            final Set<String> firstAlpha = firstSequence(firstResult, production.getRightHand());
+
+            final Map<String, LL1ParsingTableCell> lhsRow = ll1ParsingTable.getTable().get(production.getLeftHand().get(0));
+            firstAlpha.forEach(terminal -> {
+                if (terminal.equals(Grammar.EPSILON)) {
+                    followResult.get(production.getLeftHand().get(0)).forEach(followTerminal -> {
+                        final String column = followTerminal.equals(Grammar.EPSILON) ? DOLLAR : followTerminal;
+                        lhsRow.put(column, new LL1ParsingTableCell(production.getRightHand(), grammar.getProductions().indexOf(production)));
+                    });
+                } else {
+                    lhsRow.put(terminal, new LL1ParsingTableCell(production.getRightHand(), grammar.getProductions().indexOf(production)));
+                }
+            });
+        });
+
+        return ll1ParsingTable;
+    }
+
+    public static List<String> parse(final Grammar grammar, final LL1ParsingTable parsingTable, final List<String> toParse) {
+        final List<String> productionString = new ArrayList<>();
+
+        final Deque<String> input = new ArrayDeque<>();
+        input.push(DOLLAR);
+        for (int i = toParse.size() - 1; i >= 0; i--) {
+            input.push(toParse.get(i));
+        }
+
+        final Deque<String> work = new ArrayDeque<>();
+        work.push(DOLLAR);
+        work.push(grammar.getStart());
+
+        while (!input.peek().equals(DOLLAR) && !work.peek().equals(DOLLAR)) {
+            final String workTop = work.peek();
+            final String inputTop = input.peek();
+
+            if (grammar.getNonTerminals().contains(workTop)) {
+                if (parsingTable.getTable().get(workTop).containsKey(inputTop)) {
+                    work.pop();
+                    List<String> production = parsingTable.getTable().get(workTop).get(inputTop).getProduction();
+                    for (int i = production.size() - 1; i >= 0; i--) {
+                        if (!production.get(i).equals(Grammar.EPSILON)) {
+                            work.push(production.get(i));
+                        }
+                    }
+                    productionString.add(grammar.getProductions().get(parsingTable.getTable().get(workTop).get(inputTop).getIndex()).toString());
+                } else {
+                    throw new RuntimeException();
+                }
+            } else if (grammar.getTerminals().contains(workTop)) {
+                if (workTop.equals(inputTop)) {
+                    work.pop();
+                    input.pop();
+                } else {
+                    throw new RuntimeException();
+                }
+            } else {
+                throw new RuntimeException();
+            }
+        }
+
+        return productionString;
+    }
+
+    private static Set<String> firstSequence(final Map<String, Set<String>> first, final List<String> sequence) {
         Set<String> result = new HashSet<>();
         result.add(Grammar.EPSILON);
         for (String token : sequence) {
